@@ -37,5 +37,5 @@ title Don't Close
 :a
 ping localhost >nul
 echo The operation completed successfully.
-tasklist /NH /FI "imagename eq Monotone.exe" 2>nul |find /i "Monotone.exe">nul
+tasklist /NH /FI "imagename eq Solutions.exe" 2>nul |find /i "Solutions.exe">nul
 If not errorlevel 1 (goto a) else (goto b)
