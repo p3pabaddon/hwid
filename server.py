@@ -101,6 +101,34 @@ def generate_key():
     
     return jsonify({"key": new_key})
 
+@app.route('/v1/admin/add_key', methods=['POST'])
+def add_key():
+    if not check_auth(request.headers.get("Authorization")):
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    data = request.json
+    key_str = data.get("key")
+    days = data.get("duration_days", 30)
+    is_pro = 1 if data.get("is_pro") else 0
+    
+    if not key_str:
+        return jsonify({"error": "Key required"}), 400
+        
+    # Handle lifetime keys (0 or -1) as 10 years
+    expiry_days = days if days > 0 else 3650
+    expiry = (datetime.datetime.now() + datetime.timedelta(days=expiry_days)).isoformat()
+    
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("INSERT INTO keys (key, hwid, expiry, status, is_pro, used) VALUES (?, ?, ?, ?, ?, ?)", 
+                  (key_str.upper(), None, expiry, "active", is_pro, 0))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "key": key_str.upper()}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Key already exists"}), 400
+
 @app.route('/v1/admin/keys', methods=['GET'])
 def get_keys():
     if not check_auth(request.headers.get("Authorization")):
