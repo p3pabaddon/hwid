@@ -13,8 +13,8 @@ DB_NAME = "licensing.db"
 # Admin credentials matching license_manager.py
 # user: r00t_4dm (eFIwMHRfNGRt)
 # pass: solutions2024 (hash check matched)
-ADMIN_USER = "r00t_4dm"
-ADMIN_PASS = "solutions2024" # Example, in real use this is verified by hash
+ADMIN_USER = "admin"
+ADMIN_PASS = "admin123"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -82,7 +82,7 @@ def generate_key():
     days = data.get("duration_days", 30)
     is_pro = 1 if data.get("is_pro") else 0
     
-    new_key = f"SOL-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}"
+    new_key = f"{secrets.token_hex(2).upper()}-{secrets.token_hex(2).upper()}-{secrets.token_hex(2).upper()}"
     
     # Handle lifetime keys (0 or -1) as 10 years
     if days <= 0:

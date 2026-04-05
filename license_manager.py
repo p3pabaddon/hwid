@@ -8,7 +8,7 @@ import subprocess
 import hashlib
 import requests
 
-SERVER_URL = "http://localhost:5001"
+SERVER_URL = "https://hwid-sl1a.onrender.com"
 
 class LicenseManager:
     """Manages timed license keys via Remote Server API."""
@@ -111,8 +111,8 @@ class LicenseManager:
         """Verify admin locally + cache auth for API."""
         # We verify locally to allow server-less admin panel if needed,
         # but the API will also verify on every request.
-        ADMIN_USER_ENC = "eFIwMHRfNGRt"
-        ADMIN_PASS_HASH = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+        ADMIN_USER_ENC = "YWRtaW4=" # admin
+        ADMIN_PASS_HASH = "240be518fabd2724ddb6f0403bc3d59d47348c9bc88a961d55656013ef23018c" # admin123
         
         user_match_val = base64.b64encode(username.encode()).decode()
         pass_hash = hashlib.sha256(password.encode()).hexdigest()
