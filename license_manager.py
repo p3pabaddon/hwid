@@ -117,8 +117,10 @@ class LicenseManager:
         """Verify admin locally + cache auth for API."""
         # We verify locally to allow server-less admin panel if needed,
         # but the API will also verify on every request.
-        ADMIN_USER_ENC = "YWRtaW4=" # admin
-        ADMIN_PASS_HASH = "240be518fabd2724ddb6f0403bc3d59d47348c9bc88a961d55656013ef23018c" # admin123
+        # User: Sol_Admin_X -> U29sX0FkbWluX1g=
+        # Pass: Solutions#2024!Root -> 977227d825c34e02206680459c34af345b597d9e4a362846cf36070768c78854
+        ADMIN_USER_ENC = "U29sX0FkbWluX1g="
+        ADMIN_PASS_HASH = "977227d825c34e02206680459c34af345b597d9e4a362846cf36070768c78854"
         
         user_match_val = base64.b64encode(username.encode()).decode()
         pass_hash = hashlib.sha256(password.encode()).hexdigest()

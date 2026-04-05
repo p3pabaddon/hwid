@@ -13,8 +13,8 @@ DB_NAME = "licensing.db"
 # Admin credentials matching license_manager.py
 # user: r00t_4dm (eFIwMHRfNGRt)
 # pass: solutions2024 (hash check matched)
-ADMIN_USER = "admin"
-ADMIN_PASS = "admin123"
+ADMIN_USER = "Sol_Admin_X"
+ADMIN_PASS = "Solutions#2024!Root"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
