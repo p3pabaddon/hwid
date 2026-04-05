@@ -54,7 +54,17 @@ TRANSLATIONS = {
         "clean_ab": "Arena Breakout Temizle",
         "clean_df": "Delta Force Temizle",
         "m_original": "Orijinal",
-        "m_current": "Şu Anki"
+        "m_current": "Şu Anki",
+        "trace_tool": "İz Analizi",
+        "trace_title": "İz Analiz Aracı",
+        "trace_tool": "İz Analizi",
+        "trace_title": "İz Analiz Aracı",
+        "trace_scan": "İZLERİ TARA",
+        "trace_clean": "İZLERİ TEMİZLE",
+        "trace_none": "İz bulunmadı. Sistem temiz.",
+        "trace_found": "İzler tespit edildi!",
+        "trace_cleaning": "İzler temizleniyor...",
+        "trace_done": "İzler başarıyla temizlendi."
     },
     "en": {
         "login_title": "Solutions License Login",
@@ -93,7 +103,15 @@ TRANSLATIONS = {
         "sys_health": "System Health",
         "optimizing": "Optimizing system...",
         "opt_done": "Optimization completed!",
-        "stealth_lvl": "Stealth Level"
+        "stealth_lvl": "Stealth Level",
+        "trace_tool": "Trace Analysis",
+        "trace_title": "Trace Analysis Tool",
+        "trace_scan": "SCAN TRACES",
+        "trace_clean": "CLEAN TRACES",
+        "trace_none": "No traces found. System is clean.",
+        "trace_found": "Traces detected!",
+        "trace_cleaning": "Cleaning traces...",
+        "trace_done": "Traces cleaned successfully."
     },
     "ru": {
         "login_title": "Solutions Вход по лицензии",
@@ -125,7 +143,15 @@ TRANSLATIONS = {
         "clean_ab": "Очистить Arena Breakout",
         "clean_df": "Очистить Delta Force",
         "m_original": "Оригинал",
-        "m_current": "Текущий"
+        "m_current": "Текущий",
+        "trace_tool": "Анализ следов",
+        "trace_title": "Инструмент анализа следов",
+        "trace_scan": "СКАНИРОВАТЬ",
+        "trace_clean": "ОЧИСТИТЬ СЛЕДЫ",
+        "trace_none": "Следов не найдено. Система чиста.",
+        "trace_found": "Обнаружены следы!",
+        "trace_cleaning": "Очистка следов...",
+        "trace_done": "Следы успешно очищены."
     }
 }
 
@@ -578,6 +604,16 @@ class SpoofEngine:
             except:
                 pass
         self.log("USB history cleaned", "OK")
+
+    def safe_delete_tree(self, path):
+        """Helper to safely delete directories with error handling."""
+        if not os.path.exists(path): return
+        try:
+            import shutil
+            shutil.rmtree(path, ignore_errors=True)
+            self.log(f"Cleaned trace: {os.path.basename(path)}", "OK")
+        except:
+            pass
 
     def spoof_disk_guid(self):
         self.update_status("Disk GUID...")
@@ -1546,6 +1582,16 @@ class SpooferScreen(ctk.CTkFrame):
         )
         self.unban_btn.pack(fill="x", pady=(15, 0))
 
+        # Trace Analysis Tool Button
+        self.trace_btn = ctk.CTkButton(
+            action_area, text="🔍 " + self.master.get_text("trace_tool"), height=40, corner_radius=12,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="#0f172a", border_width=1, border_color=BORDER_LIGHT,
+            hover_color=BG_CARD_HOVER,
+            command=self.open_trace_tool
+        )
+        self.trace_btn.pack(fill="x", pady=(10, 0))
+
         # Warning & Footer
         ctk.CTkLabel(
             right_col, text="⚠ " + self.master.get_text("restart_msg"),
@@ -1554,6 +1600,9 @@ class SpooferScreen(ctk.CTkFrame):
 
         ctk.CTkLabel(self, text="v2.1 Professional Edition", font=ctk.CTkFont(size=9),
                      text_color="#1e1b4b").pack(side="bottom", pady=5)
+
+    def open_trace_tool(self):
+        TraceAnalysisWindow(self.master, self.engine)
 
     def update_hw_info(self):
         def _fetch():
@@ -1733,7 +1782,132 @@ class ProFeaturesFrame(ctk.CTkFrame):
             self.kernel_btn.configure(text="KERNEL ACTIVE", fg_color=SUCCESS, border_color=SUCCESS)
         else:
             self.kernel_btn.configure(text="FAILED: NO .SYS", fg_color="#450a0a", state="normal")
-            self.after(3000, lambda: self.kernel_btn.configure(text="LOAD DRIVER", fg_color=BG_DARK))
+            self.kernel_btn.configure(text="LOAD DRIVER", fg_color=BG_DARK)
+
+class TraceAnalyzer:
+    def __init__(self, engine):
+        self.engine = engine
+        self.trace_definitions = [
+            {"name": "Riot Client", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "Riot Games")},
+            {"name": "Vanguard", "path": os.path.join(os.environ.get("ProgramFiles", ""), "Riot Vanguard")},
+            {"name": "Vanguard Logs", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "Riot Games/Riot Client/Logs")},
+            {"name": "FiveM", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "FiveM")},
+            {"name": "EasyAntiCheat", "path": os.path.join(os.environ.get("ProgramData", ""), "EasyAntiCheat")},
+            {"name": "BattlEye", "path": os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Common Files/BattlEye")},
+            {"name": "Origin", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "Origin")},
+            {"name": "Electronic Arts", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "Electronic Arts")},
+            {"name": "Steam AppData", "path": os.path.join(os.environ.get("LOCALAPPDATA", ""), "Steam")},
+            {"name": "ACE Logs", "path": os.path.join(os.environ.get("APPDATA", ""), "TencentACE")},
+        ]
+
+    def scan(self):
+        found = []
+        for trace in self.trace_definitions:
+            if os.path.exists(trace["path"]):
+                found.append(trace)
+        return found
+
+    def clean(self, targets):
+        for t in targets:
+            self.engine.safe_delete_tree(t["path"])
+        return True
+
+class TraceAnalysisWindow(ctk.CTkToplevel):
+    def __init__(self, master, engine):
+        super().__init__(master)
+        self.title(master.get_text("trace_title"))
+        self.geometry("500x550")
+        self.resizable(False, False)
+        self.configure(fg_color=BG_DARK)
+        self.engine = engine
+        self.analyzer = TraceAnalyzer(engine)
+        self.found_traces = []
+        self.build()
+        self.attributes("-topmost", True)
+        self._center()
+
+    def _center(self):
+        self.update_idletasks()
+        w, h = 500, 550
+        x = (self.winfo_screenwidth() - w) // 2
+        y = (self.winfo_screenheight() - h) // 2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+    def build(self):
+        # Header
+        ctk.CTkLabel(self, text="🔍", font=ctk.CTkFont(size=40)).pack(pady=(20, 10))
+        ctk.CTkLabel(self, text=self.master.get_text("trace_title"), 
+                     font=ctk.CTkFont(size=20, weight="bold"), text_color=TEXT_PRIMARY).pack()
+        
+        self.status_lbl = ctk.CTkLabel(self, text=self.master.get_text("trace_scan") + "...", 
+                                        font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY)
+        self.status_lbl.pack(pady=5)
+
+        # Traces List
+        self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color=BG_CARD, corner_radius=12, 
+                                                   border_width=1, border_color=BORDER, height=280)
+        self.scroll_frame.pack(padx=30, pady=20, fill="both", expand=True)
+
+        # Action Buttons
+        self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.btn_frame.pack(fill="x", padx=30, pady=(0, 25))
+
+        self.clean_btn = ctk.CTkButton(self.btn_frame, text=self.master.get_text("trace_clean"), 
+                                        height=45, corner_radius=10, fg_color=ACCENT, 
+                                        hover_color=ACCENT_HOVER, state="disabled",
+                                        command=self.start_cleaning)
+        self.clean_btn.pack(side="left", expand=True, fill="x", padx=(0, 5))
+
+        self.rescan_btn = ctk.CTkButton(self.btn_frame, text="RE-SCAN", 
+                                        height=45, corner_radius=10, fg_color=BG_CARD, 
+                                        hover_color=BG_CARD_HOVER, border_width=1, border_color=BORDER_LIGHT,
+                                        command=self.start_scan)
+        self.rescan_btn.pack(side="right", expand=True, fill="x", padx=(5, 0))
+
+        self.after(500, self.start_scan)
+
+    def start_scan(self):
+        self.status_lbl.configure(text=self.master.get_text("trace_scan") + "...", text_color=TEXT_SECONDARY)
+        for w in self.scroll_frame.winfo_children(): w.destroy()
+        self.found_traces = self.analyzer.scan()
+        self.display_results()
+
+    def display_results(self):
+        if not self.found_traces:
+            ctk.CTkLabel(self.scroll_frame, text="✅ " + self.master.get_text("trace_none"), 
+                         font=ctk.CTkFont(size=13), text_color=SUCCESS).pack(pady=100)
+            self.status_lbl.configure(text=self.master.get_text("trace_none"), text_color=SUCCESS)
+            self.clean_btn.configure(state="disabled")
+        else:
+            self.status_lbl.configure(text=f"{len(self.found_traces)} " + self.master.get_text("trace_found"), text_color=WARNING)
+            for t in self.found_traces:
+                f = ctk.CTkFrame(self.scroll_frame, fg_color="#0f172a", corner_radius=8)
+                f.pack(fill="x", pady=4, padx=5)
+                ctk.CTkLabel(f, text="⚠️", width=30).pack(side="left", padx=5)
+                info = ctk.CTkFrame(f, fg_color="transparent")
+                info.pack(side="left", fill="both", expand=True, pady=8)
+                ctk.CTkLabel(info, text=t["name"], font=ctk.CTkFont(size=12, weight="bold"), 
+                             text_color=TEXT_PRIMARY, anchor="w").pack(fill="x")
+                ctk.CTkLabel(info, text=t["path"], font=ctk.CTkFont(size=9), 
+                             text_color=TEXT_DIM, anchor="w").pack(fill="x")
+            self.clean_btn.configure(state="normal")
+
+    def start_cleaning(self):
+        self.clean_btn.configure(state="disabled", text=self.master.get_text("trace_cleaning"))
+        self.status_lbl.configure(text=self.master.get_text("trace_cleaning"), text_color=ACCENT_GLOW)
+        self.after(1000, self._do_clean)
+
+    def _do_clean(self):
+        self.analyzer.clean(self.found_traces)
+        self.scroll_frame.destroy()
+        self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color=BG_CARD, corner_radius=12, 
+                                                   border_width=1, border_color=BORDER, height=280)
+        self.scroll_frame.pack(padx=30, pady=20, fill="both", expand=True)
+        ctk.CTkLabel(self.scroll_frame, text="✨ " + self.master.get_text("trace_done"), 
+                     font=ctk.CTkFont(size=14, weight="bold"), text_color=SUCCESS).pack(pady=100)
+        self.status_lbl.configure(text=self.master.get_text("trace_done"), text_color=SUCCESS)
+        self.clean_btn.configure(text=self.master.get_text("trace_clean"))
+        self.found_traces = []
 
 
 # ============================================================
