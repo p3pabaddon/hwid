@@ -1,0 +1,11 @@
+__pycache__/
+*.log
+spoof_log.txt
+app_debug.log
+config.json
+licenses.dat
+licenses.json
+screenshot.png
+.env
+venv/
+.vscode/
