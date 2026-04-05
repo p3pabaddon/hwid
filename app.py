@@ -449,12 +449,19 @@ class AdminPanel(ctk.CTkFrame):
             )
             rb.pack(side="left", padx=2)
 
-        # ---- Pro Switch ----
-        self.pro_var = ctk.BooleanVar(value=False)
-        ctk.CTkCheckBox(self, text="Pro Features Unlocked", variable=self.pro_var,
-                        font=ctk.CTkFont(size=11), fg_color=ACCENT, 
-                        hover_color=ACCENT_HOVER, border_color=BORDER_LIGHT,
-                        text_color=TEXT_SECONDARY).pack(padx=30, pady=(10, 0), anchor="w")
+        # ---- Custom Key Entry ----
+        ctk.CTkLabel(
+            self, text="Özel Anahtar (Opsiyonel)", font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=TEXT_DIM, anchor="w"
+        ).pack(padx=30, pady=(10, 2), anchor="w")
+        
+        self.custom_key_entry = ctk.CTkEntry(
+            self, height=32, corner_radius=8,
+            font=ctk.CTkFont(family="Consolas", size=12),
+            fg_color=BG_CARD, border_color=BORDER,
+            placeholder_text="Örn: ADMIN-KEY-2024"
+        )
+        self.custom_key_entry.pack(padx=30, fill="x", pady=(0, 10))
 
         # ---- Generate Button ----
         ctk.CTkButton(
@@ -539,10 +546,12 @@ class AdminPanel(ctk.CTkFrame):
     def generate_key(self):
         val = int(self.duration_var.get())
         is_pro = self.pro_var.get()
-        if val == -1: # One-time use (special logic for duration if needed)
-            key = self.lm.generate_key(duration_days=1, is_pro=is_pro) # Or add uses support back
+        custom = self.custom_key_entry.get().strip() or None
+        
+        if val == -1: # One-time
+            key = self.lm.generate_key(duration_days=1, is_pro=is_pro, custom_key=custom)
         else:
-            key = self.lm.generate_key(duration_days=val, is_pro=is_pro)
+            key = self.lm.generate_key(duration_days=val, is_pro=is_pro, custom_key=custom)
         self.new_key_entry.configure(state="normal")
         self.new_key_entry.delete(0, "end")
         self.new_key_entry.insert(0, f"🔑 {key}")

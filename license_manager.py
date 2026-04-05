@@ -71,16 +71,22 @@ class LicenseManager:
             pass
         return None
 
-    def generate_key(self, duration_days=30, is_pro=False):
+    def generate_key(self, duration_days=30, is_pro=False, custom_key=None):
         if not self.admin_auth:
             return "ERROR: Not authenticated"
             
         try:
-            print(f"DEBUG: Sending request to {SERVER_URL}/v1/admin/generate")
+            print(f"DEBUG: Sending request to {SERVER_URL}/v1/admin/add_key")
             headers = {"Authorization": f"Basic {self.admin_auth}"}
-            payload = {"duration_days": duration_days, "is_pro": is_pro}
-            response = requests.post(f"{SERVER_URL}/v1/admin/generate", json=payload, headers=headers, timeout=5)
-            print(f"DEBUG: Response status: {response.status_code}")
+            payload = {
+                "key": custom_key, 
+                "duration_days": duration_days, 
+                "is_pro": is_pro
+            }
+            # Use /v1/admin/add_key if custom_key is provided, else /v1/admin/generate
+            endpoint = "/v1/admin/add_key" if custom_key else "/v1/admin/generate"
+            response = requests.post(f"{SERVER_URL}{endpoint}", json=payload, headers=headers, timeout=5)
+            
             if response.status_code == 200:
                 return response.json().get("key")
         except:
