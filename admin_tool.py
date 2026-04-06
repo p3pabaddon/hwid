@@ -5,9 +5,9 @@ import sys
 import base64
 
 # Konfigürasyon
-SERVER_URL = "http://localhost:5001"
-ADMIN_USER = "r00t_adm"
-ADMIN_PASS = "123456"
+SERVER_URL = "https://hwid-sl1a.onrender.com"
+ADMIN_USER = "r00t_4dm"
+ADMIN_PASS = "solutions2024"
 
 def get_auth_header():
     """Create Basic Auth header."""
