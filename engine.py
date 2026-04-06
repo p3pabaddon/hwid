@@ -36,7 +36,7 @@ class SpoofEngine:
 
     def get_hardware_info(self):
         """Fetch current hardware IDs for display using multi-method fallback."""
-        info = {"disk": "N/A", "motherboard": "N/A", "mac": "N/A", "gpu": "N/A", "bios": "N/A", "cpu": "N/A"}
+        info = {"disk": "N/A", "motherboard": "N/A", "mac": "N/A", "gpu": "N/A", "bios": "N/A", "cpu": "N/A", "pc_name": "N/A"}
         
         def _try_get(cmds):
             for cmd in cmds:
@@ -52,21 +52,18 @@ class SpoofEngine:
         # Disk Serial
         info["disk"] = _try_get([
             "(Get-CimInstance Win32_DiskDrive | Where-Object { $_.InterfaceType -ne 'USB' } | Select-Object -First 1).SerialNumber",
-            "(Get-WmiObject Win32_DiskDrive | Where-Object { $_.InterfaceType -ne 'USB' } | Select-Object -First 1).SerialNumber",
             "wmic diskdrive get serialnumber"
         ]) or "N/A"
 
         # Motherboard Serial
         info["motherboard"] = _try_get([
             "(Get-CimInstance Win32_BaseBoard).SerialNumber",
-            "(Get-WmiObject Win32_BaseBoard).SerialNumber",
             "wmic baseboard get serialnumber"
         ]) or "N/A"
 
         # MAC Address (Active)
         info["mac"] = _try_get([
             "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | Select-Object -First 1).MacAddress",
-            "(Get-CimInstance Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true } | Select-Object -First 1).MACAddress",
             "getmac /fo list"
         ]) or "N/A"
 
@@ -87,6 +84,9 @@ class SpoofEngine:
             "(Get-CimInstance Win32_Processor).ProcessorId",
             "wmic cpu get processorid"
         ]) or "N/A"
+        
+        # PC Name
+        info["pc_name"] = os.environ.get("COMPUTERNAME", "N/A")
 
         return info
 
@@ -137,6 +137,7 @@ class SpoofEngine:
             ("Anakart & BIOS verileri maskeleniyor...", 0.4, self.spoof_motherboard),
             ("GPU & CPU kimlikleri simüle ediliyor...", 0.5, self.spoof_compute),
             ("MAC Adresi yenileniyor...", 0.7, self.spoof_network),
+            ("Bilgisayar adı değiştiriliyor...", 0.8, self.spoof_pc_name),
             ("Kayıt defteri izleri temizleniyor...", 0.9, self.clean_registry),
             ("Tamamlanıyor...", 1.0, self.null_op)
         ]
@@ -275,6 +276,37 @@ class SpoofEngine:
             self.log("Network adapter reset completed.")
         except Exception as e:
             self.log(f"MAC Spoof Fail: {e}")
+    def spoof_pc_name(self):
+        """Randomize the computer name in registry (Safer version)."""
+        try:
+            # NetBIOS names should be 15 chars or less.
+            new_name = "DESKTOP-" + self._rand_hex(7)
+            
+            # Registry keys for computer name (ONLY persistent ones, ActiveComputerName is dangerous to touch live)
+            paths = [
+                (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName", "ComputerName"),
+                (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", "Hostname"),
+                (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters", "NV Hostname")
+            ]
+            
+            success_count = 0
+            for hkey, path, name in paths:
+                try:
+                    k = winreg.OpenKey(hkey, path, 0, winreg.KEY_ALL_ACCESS)
+                    winreg.SetValueEx(k, name, 0, winreg.REG_SZ, new_name)
+                    winreg.CloseKey(k)
+                    success_count += 1
+                except Exception as e:
+                    self.log(f"Key Skip: {path} | {e}")
+            
+            if success_count > 0:
+                self.log(f"PC Name staged to: {new_name}")
+                self.log("CRITICAL: REBOOT REQUIRED to apply PC Name safely!")
+            else:
+                self.log("PC Name Spoof failed: No keys could be written.")
+                
+        except Exception as e:
+            self.log(f"PC Name Spoof Fail: {e}")
 
     def clean_registry(self):
         """Remove common AC tracking keys."""

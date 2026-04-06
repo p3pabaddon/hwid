@@ -68,7 +68,10 @@ TRANSLATIONS = {
         "trace_none": "İz bulunmadı. Sistem temiz.",
         "trace_found": "İzler tespit edildi!",
         "trace_cleaning": "İzler temizleniyor...",
-        "trace_done": "İzler başarıyla temizlendi."
+        "trace_done": "İzler başarıyla temizlendi.",
+        "pc_name": "PC Adı",
+        "reboot_needed": "⚠ DİKKAT: Yeniden Başlatma Gerekiyor!",
+        "reboot_warning": "PC adını uygulamak ve BSOD (Mavi Ekran) hatalarını önlemek için sistemi hemen yeniden başlatın."
     },
     "en": {
         "login_title": "Solutions License Login",
@@ -115,7 +118,10 @@ TRANSLATIONS = {
         "trace_none": "No traces found. System is clean.",
         "trace_found": "Traces detected!",
         "trace_cleaning": "Cleaning traces...",
-        "trace_done": "Traces cleaned successfully."
+        "trace_done": "Traces cleaned successfully.",
+        "pc_name": "PC Name",
+        "reboot_needed": "⚠ WARNING: Restart Required!",
+        "reboot_warning": "Restart your system now to apply PC name and avoid BSOD errors."
     },
     "ru": {
         "login_title": "Solutions Вход по лицензии",
@@ -682,14 +688,15 @@ class SpooferScreen(ctk.CTkFrame):
         hw_inner = ctk.CTkFrame(hw_card, fg_color="transparent")
         hw_inner.pack(fill="x", padx=15, pady=(0, 15))
 
+        hw_keys = ["disk", "motherboard", "mac", "gpu", "bios", "cpu", "pc_name"]
         self.hw_labels = {}
-        for i, (key, label) in enumerate([("disk", "Disk"), ("motherboard", "Board"), 
-                                         ("mac", "MAC"), ("gpu", "GPU"),
-                                         ("bios", "BIOS"), ("cpu", "CPU")]):
-            lbl = ctk.CTkLabel(hw_inner, text=f"{label}: --", 
-                               font=ctk.CTkFont(family="Consolas", size=10),
-                               text_color=TEXT_SECONDARY, anchor="w")
-            lbl.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+        for i, key in enumerate(hw_keys):
+            lbl = ctk.CTkLabel(
+                hw_inner, text=f"{self.master.get_text(key)}: --", 
+                font=ctk.CTkFont(size=10, slant="italic"), 
+                text_color=TEXT_SECONDARY
+            )
+            lbl.grid(row=i // 2, column=i % 2, sticky="w", padx=10, pady=2)
             self.hw_labels[key] = lbl
         
         self.original_info = self.engine.get_hardware_info()
@@ -816,7 +823,8 @@ class SpooferScreen(ctk.CTkFrame):
                               "mac": self.master.get_text("mac"), 
                               "gpu": self.master.get_text("gpu"),
                               "bios": self.master.get_text("bios"),
-                              "cpu": self.master.get_text("cpu")}[key]
+                              "cpu": self.master.get_text("cpu"),
+                              "pc_name": self.master.get_text("pc_name")}[key]
                 
                 status_color = SUCCESS if orig != curr and curr != "N/A" else TEXT_SECONDARY
                 arrow = " -> " if orig != curr else " | "
@@ -860,12 +868,31 @@ class SpooferScreen(ctk.CTkFrame):
         if ok:
             self.unban_btn.configure(fg_color=SUCCESS, text="✓ TAMAMLANDI", state="disabled")
             self.status_dot.configure(text_color=SUCCESS)
-            self._set_status("Tüm işlemler başarıyla tamamlandı!")
+            self._set_status(self.master.get_text("completed"))
+            # Custom Alert for Reboot
+            self.after(500, self._show_reboot_modal)
         else:
             self.unban_btn.configure(fg_color=ERROR, text="HATA!", state="normal")
             self.status_dot.configure(text_color=ERROR)
             self._set_status(f"Hata: {err}")
             self.after(4000, self._reset_btn)
+
+    def _show_reboot_modal(self):
+        msg = ctk.CTkToplevel(self)
+        msg.title("Restart Needed")
+        msg.geometry("400x200")
+        msg.configure(fg_color=BG_DARK)
+        msg.attributes("-topmost", True)
+        
+        ctk.CTkLabel(msg, text=self.master.get_text("reboot_needed"), 
+                     font=ctk.CTkFont(size=16, weight="bold"), text_color=WARNING).pack(pady=(20, 10))
+        
+        ctk.CTkLabel(msg, text=self.master.get_text("reboot_warning"), 
+                     font=ctk.CTkFont(size=12), text_color=TEXT_PRIMARY, wraplength=350).pack(pady=10)
+        
+        ctk.CTkButton(msg, text="TAMAM / OK", width=100, height=32, corner_radius=8,
+                      fg_color=ACCENT, hover_color=ACCENT_HOVER,
+                      command=msg.destroy).pack(pady=10)
 
     def _reset_btn(self):
         self.unban_btn.configure(fg_color=ACCENT, hover_color=ACCENT_HOVER, text="⚡  UNBAN")
