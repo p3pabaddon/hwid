@@ -11,7 +11,7 @@ def build():
     os.chdir(script_dir)
     print(f"Working directory: {os.getcwd()}")
     print("Checking dependencies...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller", "customtkinter", "pillow", "requests", "flask"], check=True)
+    # dependencies are assumed pre-installed
     
     # 2. Cleanup old builds
     for d in ["build", "dist"]:
@@ -48,4 +48,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n[ERROR] Build interrupted: {e}")
     finally:
-        input("\nKapatmak için Enter'a basın...")
+        pass

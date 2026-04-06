@@ -440,6 +440,7 @@ class AdminPanel(ctk.CTkFrame):
         duration_frame.pack(padx=30, fill="x")
 
         self.duration_var = ctk.StringVar(value="0") # 0 = Lifetime
+        self.pro_var = ctk.BooleanVar(value=True) # Default to PRO keys
         durations = [("Tek", "-1"), ("1G", "1"), ("7G", "7"), ("30G", "30"), ("Sın.", "0")]
         for text, val in durations:
             rb = ctk.CTkRadioButton(
@@ -448,6 +449,18 @@ class AdminPanel(ctk.CTkFrame):
                 hover_color=ACCENT_HOVER, width=65
             )
             rb.pack(side="left", padx=2)
+
+        # ---- Pro Toggle ----
+        pro_frame = ctk.CTkFrame(self, fg_color="transparent")
+        pro_frame.pack(padx=30, pady=(10, 0), fill="x")
+        
+        self.pro_switch = ctk.CTkSwitch(
+            pro_frame, text="Professional Sürüm (Özellikleri Açar)", 
+            variable=self.pro_var,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            progress_color=ACCENT, text_color=TEXT_SECONDARY
+        )
+        self.pro_switch.pack(side="left")
 
         # ---- Custom Key Entry ----
         ctk.CTkLabel(
@@ -470,6 +483,9 @@ class AdminPanel(ctk.CTkFrame):
             fg_color=ACCENT, hover_color=ACCENT_HOVER,
             command=self.generate_key
         ).pack(padx=30, fill="x", pady=(20, 0))
+
+        self.err_label = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=11), text_color=ERROR)
+        self.err_label.pack(pady=(2, 0))
 
         self.new_key_entry = ctk.CTkEntry(
             self, font=ctk.CTkFont(family="Consolas", size=16),
@@ -544,23 +560,31 @@ class AdminPanel(ctk.CTkFrame):
                                  text_color=TEXT_DIM).pack(side="right", padx=5)
 
     def generate_key(self):
-        val = int(self.duration_var.get())
-        is_pro = self.pro_var.get()
-        custom = self.custom_key_entry.get().strip() or None
-        
-        if val == -1: # One-time
-            key = self.lm.generate_key(duration_days=1, is_pro=is_pro, custom_key=custom)
-        else:
+        try:
+            val = int(self.duration_var.get())
+            is_pro = self.pro_var.get()
+            custom = self.custom_key_entry.get().strip() or None
+            
             key = self.lm.generate_key(duration_days=val, is_pro=is_pro, custom_key=custom)
-        self.new_key_entry.configure(state="normal")
-        self.new_key_entry.delete(0, "end")
-        self.new_key_entry.insert(0, f"🔑 {key}")
-        self.new_key_entry.configure(state="readonly")
-        # Copy to clipboard
-        self.clipboard_clear()
-        self.clipboard_append(key)
-        # Rebuild to update stats and list
-        self.after(1200, self.refresh)
+            
+            if "ERROR" in key:
+                self.err_label.configure(text=f"Hata: {key}")
+                return
+
+            self.err_label.configure(text="")
+            self.new_key_entry.configure(state="normal")
+            self.new_key_entry.delete(0, "end")
+            self.new_key_entry.insert(0, f"🔑 {key}")
+            self.new_key_entry.configure(state="readonly")
+            
+            # Copy to clipboard
+            self.clipboard_clear()
+            self.clipboard_append(key)
+            
+            # Rebuild to update stats and list
+            self.after(1200, self.refresh)
+        except Exception as e:
+            self.err_label.configure(text=f"Hata: {str(e)}")
 
     def refresh(self):
         for w in self.winfo_children():

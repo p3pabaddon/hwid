@@ -10,9 +10,7 @@ import os
 app = Flask(__name__)
 DB_NAME = "licensing.db"
 
-# Admin credentials matching license_manager.py
-# user: r00t_4dm (eFIwMHRfNGRt)
-# pass: solutions2024 (hash check matched)
+# Admin credentials - MUST MATCH license_manager.py
 ADMIN_USER = "Sol_Admin_X"
 ADMIN_PASS = "Solutions#2024!Root"
 
@@ -99,7 +97,7 @@ def generate_key():
     conn.commit()
     conn.close()
     
-    return jsonify({"key": new_key})
+    return jsonify({"success": True, "key": new_key})
 
 @app.route('/v1/admin/add_key', methods=['POST'])
 def add_key():

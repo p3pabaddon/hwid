@@ -73,11 +73,13 @@ class LicenseManager:
 
     def generate_key(self, duration_days=30, is_pro=False, custom_key=None):
         if not self.admin_auth:
-            return "ERROR: Not authenticated"
+            return "ERROR: AUTH REQUIRED"
             
         try:
-            print(f"DEBUG: Sending request to {SERVER_URL}/v1/admin/add_key")
-            headers = {"Authorization": f"Basic {self.admin_auth}"}
+            # We use requests built-in auth for better header handling
+            u, p = base64.b64decode(self.admin_auth).decode().split(":")
+            auth = (u, p)
+            
             payload = {
                 "key": custom_key, 
                 "duration_days": duration_days, 
@@ -85,25 +87,31 @@ class LicenseManager:
             }
             # Use /v1/admin/add_key if custom_key is provided, else /v1/admin/generate
             endpoint = "/v1/admin/add_key" if custom_key else "/v1/admin/generate"
-            response = requests.post(f"{SERVER_URL}{endpoint}", json=payload, headers=headers, timeout=5)
+            response = requests.post(f"{SERVER_URL}{endpoint}", json=payload, auth=auth, timeout=5)
             
-            if response.status_code == 200:
-                return response.json().get("key")
-        except:
-            pass
-        return "ERROR"
+            if response.status_code in [200, 201]:
+                data = response.json()
+                # Server might return key directly or inside success
+                if data.get("success") or "key" in data:
+                    return data.get("key")
+                return f"ERROR: {data.get('message', data.get('error', 'Unknown server error'))}"
+            return f"ERROR: HTTP {response.status_code}"
+        except Exception as e:
+            return f"ERROR: {str(e)}"
 
     def get_all_keys(self):
         """Admin: Get all keys from Server."""
         if not self.admin_auth: return []
         try:
+            u, p = base64.b64decode(self.admin_auth).decode().split(":")
             resp = requests.get(f"{SERVER_URL}/v1/admin/keys",
-                                headers={"Authorization": f"Basic {self.admin_auth}"},
+                                auth=(u, p),
                                 timeout=5)
             if resp.status_code == 200:
                 return resp.json()
-        except:
-            pass
+            print(f"DEBUG: get_all_keys failed with {resp.status_code}")
+        except Exception as e:
+            print(f"DEBUG: get_all_keys exception: {e}")
         return []
 
     def get_stats(self):
@@ -118,9 +126,9 @@ class LicenseManager:
         # We verify locally to allow server-less admin panel if needed,
         # but the API will also verify on every request.
         # User: Sol_Admin_X -> U29sX0FkbWluX1g=
-        # Pass: Solutions#2024!Root -> 977227d825c34e02206680459c34af345b597d9e4a362846cf36070768c78854
+        # Pass: Solutions#2024!Root -> 1e9bdae3491aabf0e6b84b00071f8acf47a8461800998f81e37f19d777a6b59f
         ADMIN_USER_ENC = "U29sX0FkbWluX1g="
-        ADMIN_PASS_HASH = "977227d825c34e02206680459c34af345b597d9e4a362846cf36070768c78854"
+        ADMIN_PASS_HASH = "1e9bdae3491aabf0e6b84b00071f8acf47a8461800998f81e37f19d777a6b59f"
         
         user_match_val = base64.b64encode(username.encode()).decode()
         pass_hash = hashlib.sha256(password.encode()).hexdigest()
