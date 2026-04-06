@@ -20,7 +20,7 @@ class LicenseManager:
     def get_hwid(self):
         try:
             cmd = "powershell -Command \"(Get-CimInstance Win32_ComputerSystemProduct).UUID\""
-            out = subprocess.check_output(cmd, shell=True).decode().strip()
+            out = subprocess.check_output(cmd, shell=True, creationflags=subprocess.CREATE_NO_WINDOW).decode().strip()
             if out: return out
             return str(uuid.getnode())
         except:

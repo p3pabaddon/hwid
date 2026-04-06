@@ -42,7 +42,7 @@ class SpoofEngine:
             for cmd in cmds:
                 try:
                     args = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", cmd]
-                    result = subprocess.run(args, capture_output=True, text=True, timeout=8)
+                    result = subprocess.run(args, capture_output=True, text=True, timeout=8, creationflags=subprocess.CREATE_NO_WINDOW)
                     if result.returncode == 0 and result.stdout.strip():
                         return result.stdout.strip()
                 except Exception as e:
@@ -104,7 +104,7 @@ class SpoofEngine:
             # Delete log files
             if os.path.exists("debug.log"): os.remove("debug.log")
             # Clear prefetch/temp traces if admin
-            subprocess.run(["powershell", "Clear-RecycleBin -Confirm:$false"], capture_output=True)
+            subprocess.run(["powershell", "Clear-RecycleBin -Confirm:$false"], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
             # Exit app
             os._exit(0)
         except:
@@ -164,10 +164,10 @@ class SpoofEngine:
             
             # Volume IDs (Partition serials)
             self.log("Randomizing Volume Serial Numbers...")
-            subprocess.run(["powershell", "-Command", "Get-Volume | ForEach-Object { $id = -join ((48..57) + (97..102) | Get-Random -Count 8 | ForEach-Object {[char]$_}); set-itemproperty -path ('HKLM:\\SYSTEM\\MountedDevices') -name ('\\??\\Volume{' + $_.UniqueId + '}') -value $id -ErrorAction SilentlyContinue }"], capture_output=True)
+            subprocess.run(["powershell", "-Command", "Get-Volume | ForEach-Object { $id = -join ((48..57) + (97..102) | Get-Random -Count 8 | ForEach-Object {[char]$_}); set-itemproperty -path ('HKLM:\\SYSTEM\\MountedDevices') -name ('\\??\\Volume{' + $_.UniqueId + '}') -value $id -ErrorAction SilentlyContinue }"], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
             
             # Clean MountPoints2
-            subprocess.run(["powershell", "-Command", "Remove-Item -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2' -Recurse -ErrorAction SilentlyContinue"], capture_output=True)
+            subprocess.run(["powershell", "-Command", "Remove-Item -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2' -Recurse -ErrorAction SilentlyContinue"], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
             
         except Exception as e:
             self.log(f"Disk Spoof Fail: {e}")
@@ -271,7 +271,7 @@ class SpoofEngine:
             }
             """
             subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script], 
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
             self.log("Network adapter reset completed.")
         except Exception as e:
             self.log(f"MAC Spoof Fail: {e}")
@@ -373,7 +373,7 @@ class SpoofEngine:
         self.log("Starting EFI Trace Clean...")
         try:
             # Try to mount EFI to Z:
-            subprocess.run(["mountvol", "Z:", "/S"], capture_output=True)
+            subprocess.run(["mountvol", "Z:", "/S"], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
             time.sleep(1)
             
             efi_targets = [
@@ -387,7 +387,7 @@ class SpoofEngine:
                     self.log(f"Found EFI Tracker: {t}")
                     # Usually we'd delete or shuffle it
             
-            subprocess.run(["mountvol", "Z:", "/D"], capture_output=True)
+            subprocess.run(["mountvol", "Z:", "/D"], capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
             self.log("EFI Clean Check Complete.")
         except Exception as e:
             self.log(f"EFI Clean failed: {e}")
